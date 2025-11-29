@@ -2,6 +2,7 @@ package limiter
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -63,6 +64,19 @@ type LimiterState struct {
 
 	// Key 该限流器的业务 key（例如 "api:/v1/login"、"user:123"）
 	Key string
+}
+
+func (s LimiterState) String() string {
+	return fmt.Sprintf("level=%.f; remaining=%.f; capactity=%.f; rate=%.f; last_updated=%d; next_available_time=%d; type=%s;key=%s",
+		s.Level,
+		s.Remaining,
+		s.Capacity,
+		s.Rate,
+		s.LastUpdated,
+		s.NextAvailableTime,
+		s.Type,
+		s.Key,
+	)
 }
 
 // RateShardedLimiter 支持分片的限流器接口

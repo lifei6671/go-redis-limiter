@@ -20,13 +20,16 @@ func main() {
 		limiter.WithTokenBucketRate(2),
 		limiter.WithTokenBucketCapacity(2),
 	)
+	ctx := context.Background()
 
 	for i := 0; i < 10; i++ {
-		err := redisLimiter.Wait(context.Background(), "limiter:", time.Millisecond*100)
+		err := redisLimiter.Wait(ctx, "limiter:", time.Millisecond*500)
 		if err != nil {
 			log.Printf("[%d]:limiter wait err:%s", i, err)
 		} else {
 			log.Printf("[%d]:limiter wait ok", i)
 		}
+		status, err := redisLimiter.State(ctx, "limiter:")
+		log.Printf("[%d]:limiter:status:%s", i, status)
 	}
 }
