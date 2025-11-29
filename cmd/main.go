@@ -11,24 +11,22 @@ import (
 )
 
 func main() {
-	factory := limiter.New(&limiter.LimitOption{
-		Enable:   true,
-		Key:      "qpsLimit",
-		Count:    2,
-		Duration: time.Second * 5,
-		Timeout:  time.Second,
-	})
+
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "redis_5kYGjd",
 	})
-	redisLimiter := factory.Create("qpsLimit", client)
+	redisLimiter := limiter.NewShardedTokenBucketLimiter(client, "limiter:", 2,
+		limiter.WithTokenBucketRate(2),
+		limiter.WithTokenBucketCapacity(2),
+	)
 
 	for i := 0; i < 10; i++ {
-		err := redisLimiter.Wait(context.Background())
+		err := redisLimiter.Wait(context.Background(), "limiter:", time.Millisecond*100)
 		if err != nil {
-			log.Fatalf("[%d]:limiter wait err:%s", i, err)
+			log.Printf("[%d]:limiter wait err:%s", i, err)
+		} else {
+			log.Printf("[%d]:limiter wait ok", i)
 		}
-		log.Printf("[%d]:limiter wait ok", i)
 	}
 }
