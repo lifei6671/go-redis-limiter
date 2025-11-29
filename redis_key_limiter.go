@@ -157,6 +157,8 @@ func (l *ShardedRedisTokenBucket) Wait(ctx context.Context, shardKey string, max
 	}
 
 	deadline := time.Now().Add(maxWait)
+	timer := time.NewTimer(time.Second)
+	defer timer.Stop()
 	for {
 		ok, err := l.Allow(ctx, shardKey)
 		if err != nil {
@@ -168,12 +170,12 @@ func (l *ShardedRedisTokenBucket) Wait(ctx context.Context, shardKey string, max
 
 		if maxWait == 0 {
 			// 不等待，直接返回限流
-			return fmt.Errorf("rate limited")
+			return ErrLimiter
 		}
 
 		now := time.Now()
 		if now.After(deadline) {
-			return fmt.Errorf("rate limited (timeout)")
+			return ErrTimeout
 		}
 
 		// 计算一个合理的 sleep 间隔，避免惊群
@@ -187,14 +189,16 @@ func (l *ShardedRedisTokenBucket) Wait(ctx context.Context, shardKey string, max
 			sleep = time.Millisecond
 		}
 		remain := time.Until(deadline)
+		// 根据给定的最大超时事件，计算需要等待的时间，这里不能直接用传入的等待时长，需要在等待时间内多次重试。
 		if sleep > remain {
 			sleep = remain
 		}
-
+		timer.Reset(sleep)
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(sleep):
+		case <-timer.C:
+			// 这里等待一段时间，方式频繁访问 Redis
 		}
 	}
 }

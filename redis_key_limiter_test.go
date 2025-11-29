@@ -36,3 +36,27 @@ func TestShardedRedisTokenBucket_Allow(t *testing.T) {
 	})
 
 }
+
+func TestShardedRedisTokenBucket_Wait(t *testing.T) {
+	t.Run("wait ok", func(t *testing.T) {
+		rLimit := NewShardedRedisTokenBucket(nil, "test", 0, 0, 1, time.Minute)
+
+		patches := gomonkey.ApplyMethodReturn(rLimit, "Allow", true, nil)
+		defer patches.Reset()
+
+		err := rLimit.Wait(context.Background(), "key", time.Millisecond)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("wait err", func(t *testing.T) {
+		rLimit := NewShardedRedisTokenBucket(nil, "test", 0, 0, 1, time.Minute)
+
+		patches := gomonkey.ApplyMethodReturn(rLimit, "Allow", false, nil)
+		defer patches.Reset()
+
+		err := rLimit.Wait(context.Background(), "key", time.Millisecond)
+
+		assert.Equal(t, err, ErrTimeout)
+	})
+}
