@@ -14,7 +14,7 @@ func main() {
 
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
-		Password: "redis_5kYGjd",
+		Password: "redis_password",
 	})
 	redisLimiter := limiter.NewShardedTokenBucketLimiter(client, "limiter:", 2,
 		limiter.WithTokenBucketRate(2),
